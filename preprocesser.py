@@ -2,11 +2,9 @@ import re
 
 
 class TextPreprocessor:
-    """Only responsible for cleaning and preprocessing text"""
-
     def __init__(self):
         self.skip = {".", ",", "!", "?", ";", ":", "-", "--", "•", "*"}
-
+ 
     def preprocess(self, pages_data):
         for page in pages_data:
             page["words"] = [
@@ -15,7 +13,7 @@ class TextPreprocessor:
             ]
             page["full_text"] = " ".join(w["text"] for w in page["words"])
         return pages_data
-
+ 
     def clean_text(self, text):
         text = re.sub(r'\[\d+(?:,\s*\d+)*\]', '', text)
         text = re.sub(r'\s+', ' ', text).strip()

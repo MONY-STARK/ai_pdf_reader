@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF Viewer</title>
+</head>
+<body>
+
+<h2>Upload and View PDF</h2>
+
+<input type="file" id="pdfUpload" accept="application/pdf">
+<p>Query: <input type="text" id="query" style="width:400px">
+<button onclick="search()">Search & Highlight</button>
+<span id="status"></span>
+</p>
+
+<br>
+
+<iframe id="pdfViewer" width="1700" height="750"></iframe>
+
+<script>
+const BACKEND = 'http://localhost:8000';
+
+// ── Upload PDF to backend + show in iframe ──────────────────────────────────
+document.getElementById("pdfUpload").addEventListener("change", async function(e) {
+    const file = e.target.files[0];
+    if (!file || file.type !== "application/pdf") return alert("Upload a PDF");
+
+    // show original in iframe immediately
+    document.getElementById("pdfViewer").src = URL.createObjectURL(file);
+
+    // send to backend for indexing
+    document.getElementById("status").textContent = "indexing...";
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+        const res  = await fetch(`${BACKEND}/upload`, { method: "POST", body: fd });
+        const data = await res.json();
+        document.getElementById("status").textContent = `✓ ${data.chunks} chunks indexed`;
+    } catch (err) {
+        document.getElementById("status").textContent = "backend offline";
+        console.error(err);
+    }
+});
+
+// ── Search → get highlighted PDF → show in iframe ──────────────────────────
+async function search() {
+    const query = document.getElementById("query").value.trim();
+    if (!query) return alert("Enter a query");
+
+    document.getElementById("status").textContent = "searching...";
+
+    try {
+        const res = await fetch(`${BACKEND}/highlight`, {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ query, n_results: 3 })
+        });
+
+        // convert response to blob and show in iframe
+        const blob   = await res.blob();
+        const pdfUrl = URL.createObjectURL(blob);
+        document.getElementById("pdfViewer").src = pdfUrl;
+        document.getElementById("status").textContent = "✓ highlighted";
+
+    } catch (err) {
+        document.getElementById("status").textContent = "error";
+        console.error(err);
+    }
+}
+</script>
+
+</body>
+</html>
